@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine
+from app.routes import safety   # You can add/remove as needed
 # from app.routes import users, safety, listings   # You can add/remove as needed
 
 app = FastAPI(
@@ -33,5 +34,5 @@ def home():
 # ---------------------------
 # app.include_router(users.router, prefix="/users", tags=["Users"])
 # app.include_router(listings.router, prefix="/listings", tags=["Listings"])
-# app.include_router(safety.router, prefix="/safety", tags=["AI Safety"])
+app.include_router(safety.router, prefix="/safety", tags=["AI Safety"])
 
