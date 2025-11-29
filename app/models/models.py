@@ -216,47 +216,47 @@ class Review(Base):
     artist = relationship("User", foreign_keys=[artistId])
 
 
-# class ArtistReview(Base):
-#     __tablename__ = "artist_reviews"
+class ArtistReview(Base):
+    __tablename__ = "artist_reviews"
 
-#     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-#     reviewer_id = Column(String(36), ForeignKey("users.id"))
-#     artist_id = Column(String(36), ForeignKey("users.id"))
-#     rating = Column(Integer, nullable=False)
-#     comment = Column(Text)
-#     created_at = Column(DateTime, default=datetime.utcnow)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    reviewer_id = Column(String(36), ForeignKey("users.id"))
+    artist_id = Column(String(36), ForeignKey("users.id"))
+    rating = Column(Integer, nullable=False)
+    comment = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
-#     reviewer = relationship("User", foreign_keys=[reviewer_id], backref="artist_reviews_made")
-#     artist = relationship("User", foreign_keys=[artist_id], backref="artist_reviews_received")
+    reviewer = relationship("User", foreign_keys=[reviewer_id], backref="artist_reviews_made")
+    artist = relationship("User", foreign_keys=[artist_id], backref="artist_reviews_received")
 
 
 # ============================================================
 # SAVED & CART
 # ============================================================
 
-# class Saved(Base):
-#     __tablename__ = "saved"
+class Saved(Base):
+    __tablename__ = "saved"
 
-#     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-#     userId = Column(String(36), ForeignKey("users.id"))
-#     artworkId = Column(String(36), ForeignKey("artworks.id"))
-#     createdAt = Column(DateTime, default=datetime.utcnow)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    userId = Column(String(36), ForeignKey("users.id"))
+    artworkId = Column(String(36), ForeignKey("artworks.id"))
+    createdAt = Column(DateTime, default=datetime.utcnow)
 
-#     user = relationship("User", back_populates="Saved_items")
-#     artwork = relationship("Artwork", back_populates="Saved_items")
+    user = relationship("User", back_populates="Saved_items")
+    artwork = relationship("Artwork", back_populates="Saved_items")
 
 
-# class Cart(Base):
-#     __tablename__ = "cart"
+class Cart(Base):
+    __tablename__ = "cart"
 
-#     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-#     userId = Column(String(36), ForeignKey("users.id"))
-#     artworkId = Column(String(36), ForeignKey("artworks.id"))
-#     purchase_quantity = Column(Integer, default=1)
-#     createdAt = Column(DateTime, default=datetime.utcnow)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    userId = Column(String(36), ForeignKey("users.id"))
+    artworkId = Column(String(36), ForeignKey("artworks.id"))
+    purchase_quantity = Column(Integer, default=1)
+    createdAt = Column(DateTime, default=datetime.utcnow)
 
-#     user = relationship("User", back_populates="cart_items")
-#     artwork = relationship("Artwork", back_populates="cart_items")
+    user = relationship("User", back_populates="cart_items")
+    artwork = relationship("Artwork", back_populates="cart_items")
 
 
 # ============================================================
@@ -322,7 +322,7 @@ class FraudLog(Base):
     user_id = Column(String(36), ForeignKey("users.id"))
     event = Column(String(255))
     risk_score = Column(Float)
-    metadata = Column(JSON)
+    infodata = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User")
