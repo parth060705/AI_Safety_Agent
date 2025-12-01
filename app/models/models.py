@@ -1,3 +1,4 @@
+
 from sqlalchemy import (
     Column, String, Float, Text, Enum, Boolean, ForeignKey,
     Integer, DateTime, CHAR, Table, JSON
