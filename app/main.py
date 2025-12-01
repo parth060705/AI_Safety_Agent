@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import Base, engine
 from app.routes import safety   # You can add/remove as needed
 # from app.routes import users, safety, listings   # You can add/remove as needed
+from app.utils.schedulers_utils import start_scheduler
 
 app = FastAPI(
     title="Social Marketplace AI Safety Agent",
@@ -28,6 +29,10 @@ app.add_middleware(
 @app.get("/")
 def home():
     return {"message": "AI Safety Agent is running."}
+
+
+# Start scheduled moderation checks
+start_scheduler()
 
 # ---------------------------
 # Routers (modular API)

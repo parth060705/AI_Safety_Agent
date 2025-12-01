@@ -9,9 +9,9 @@ import enum
 from sqlalchemy import Enum as SqlEnum
 from app.database import Base
 
-# ============================================================
+# -------------------------
 # ENUM DEFINITIONS
-# ============================================================
+# -------------------------
 
 class RoleEnum(str, enum.Enum):
     user = "user"
@@ -23,17 +23,30 @@ class PaymentStatusEnum(str, enum.Enum):
     paid = "paid"
     failed = "failed"
 
+# -------------------------
+# PAYMENT METHOD ENUM
+# -------------------------
+
 class PaymentMethodEnum(str, enum.Enum):
     credit_card = "credit_card"
     debit_card = "debit_card"
     net_banking = "net_banking"
     upi = "upi"
-    cod = "cod"
+    cod = "cod"  # Cash on Delivery
+
+# -------------------------
+# STATUS ENUM
+# -------------------------
+
+class StatusENUM(str, enum.Enum):
+    visible = "visible"
+    pending_moderation = "pending_moderation"
+    hidden = "hidden"
 
 
-# ============================================================
+# -------------------------
 # FOLLOWERS ASSOCIATION TABLE
-# ============================================================
+# -------------------------
 
 followers_association = Table(
     "user_followers",
@@ -43,10 +56,9 @@ followers_association = Table(
     Column("created_at", DateTime, default=datetime.utcnow)
 )
 
-
-# ============================================================
+# -------------------------
 # USER MODEL
-# ============================================================
+# -------------------------
 
 class User(Base):
     __tablename__ = "users"
@@ -57,13 +69,12 @@ class User(Base):
     username = Column(String(100), unique=True, nullable=False)
     passwordHash = Column(String(255), nullable=False)
     role = Column(SqlEnum(RoleEnum, native_enum=False), nullable=False, default=RoleEnum.user)
-
     profileImage = Column(String(255), nullable=True)
-    profileImagePublicId = Column(String(255), nullable=True)
-
+    profileImagePublicId = Column(String(255), nullable=True)  
+    # createdAt = Column(DateTime, nullable=False)     
+    # updatedAt = Column(DateTime, nullable=True)
     createdAt = Column(DateTime, default=datetime.utcnow)
-    updatedAt = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
+    updatedAt = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow) 
     location = Column(String(100), nullable=True)
     pincode = Column(CHAR(6), nullable=True)
     gender = Column(String(20), nullable=True)
@@ -71,9 +82,9 @@ class User(Base):
     phone = Column(String(15), nullable=True)
     bio = Column(String(500), nullable=True)
     profile_completion = Column(Integer, default=0)
-
-    isActive = Column(Boolean, default=False)
-    isAgreedtoTC = Column(Boolean, default=False)
+    isActive = Column(Boolean, default=False)         
+    isAgreedtoTC = Column(Boolean, default=False)         
+ 
 
     # Relationships
     artworks = relationship("Artwork", back_populates="artist")
@@ -89,13 +100,27 @@ class User(Base):
         secondary=followers_association,
         primaryjoin=id == followers_association.c.followed_id,
         secondaryjoin=id == followers_association.c.follower_id,
-        backref="following",
+        backref="following"
     )
 
+    # Follow utility methods
+    def follow(self, user: "User"):
+        if user not in self.following:
+            self.following.append(user)
 
-# ============================================================
-# ARTWORKS
-# ============================================================
+    def unfollow(self, user: "User"):
+        if user in self.following:
+            self.following.remove(user)
+
+    def is_following(self, user: "User") -> bool:
+        return user in self.following
+
+    def is_followed_by(self, user: "User") -> bool:
+        return user in self.followers
+
+# -------------------------
+# ARTWORK MODEL
+# -------------------------
 
 class Artwork(Base):
     __tablename__ = "artworks"
@@ -103,27 +128,31 @@ class Artwork(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title = Column(String(200), nullable=False)
     description = Column(Text)
-    price = Column(Float, nullable=True)
-    quantity = Column(Integer, nullable=True, default=None)
-    tags = Column(JSON, default=list)
-
+    images = relationship(
+        "ArtworkImage",
+        cascade="all, delete-orphan",
+        back_populates="artwork",
+    )
+    tags = Column(JSON, default=list, nullable=True)  
+    price = Column(Float, nullable=True)                       ####
+    quantity = Column(Integer, nullable=True, default=None)    ####  
     category = Column(String(100), nullable=False)
     artistId = Column(String(36), ForeignKey("users.id"))
-
     createdAt = Column(DateTime, default=datetime.utcnow)
-
+    # createdAt = Column(DateTime, nullable=False)
     isSold = Column(Boolean, default=False)
-    isDeleted = Column(Boolean, default=False)
-    forSale = Column(Boolean, default=False)
+    isDeleted = Column(Boolean, default=False)    
+    forSale = Column(Boolean, default=False)     
 
+    # Relationships
     artist = relationship("User", back_populates="artworks")
-    images = relationship("ArtworkImage", back_populates="artwork", cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="artwork")
     reviews = relationship("Review", back_populates="artwork")
     Saved_items = relationship("Saved", back_populates="artwork")
     cart_items = relationship("Cart", back_populates="artwork")
     likes = relationship("ArtworkLike", back_populates="artwork", cascade="all, delete-orphan")
     comments = relationship("Comment", back_populates="artwork", cascade="all, delete-orphan")
+    status = Column(String(20), default="pending_moderation")  ##
 
 
 class ArtworkImage(Base):
@@ -131,11 +160,16 @@ class ArtworkImage(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     artwork_id = Column(String(36), ForeignKey("artworks.id"))
-    url = Column(String(500), nullable=False)
-    public_id = Column(String(255), nullable=False)
+    url = Column(String(500), nullable=False)       # Cloudinary URLs can be long
+    public_id = Column(String(255), nullable=False) # public_id is shorter
 
+
+    # Relationships
     artwork = relationship("Artwork", back_populates="images")
 
+# -------------------------
+# ARTWORK LIKES
+# -------------------------
 
 class ArtworkLike(Base):
     __tablename__ = "artwork_likes"
@@ -143,27 +177,34 @@ class ArtworkLike(Base):
     userId = Column(String(36), ForeignKey("users.id"), primary_key=True)
     artworkId = Column(String(36), ForeignKey("artworks.id"), primary_key=True)
     createdAt = Column(DateTime, default=datetime.utcnow)
+    # createdAt = Column(DateTime, nullable=False)
 
+    # Relationships
     artwork = relationship("Artwork", back_populates="likes")
     user = relationship("User", back_populates="liked_artworks")
 
+# -------------------------
+# COMMENT MODEL
+# -------------------------
 
 class Comment(Base):
     __tablename__ = "comments"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String(36), ForeignKey("users.id"))
-    artwork_id = Column(String(36), ForeignKey("artworks.id"))
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    artwork_id = Column(String(36), ForeignKey("artworks.id"), nullable=False)
     content = Column(String(500), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # createdAt = Column(DateTime, nullable=False)
+    status = Column(String(20), default="pending_moderation")  ##
 
+    # Relationships
     user = relationship("User", back_populates="comments")
     artwork = relationship("Artwork", back_populates="comments")
 
-
-# ============================================================
-# ORDERS & PAYMENTS
-# ============================================================
+# -------------------------
+# ORDER MODEL
+# -------------------------
 
 class Order(Base):
     __tablename__ = "orders"
@@ -172,33 +213,17 @@ class Order(Base):
     buyerId = Column(String(36), ForeignKey("users.id"))
     artworkId = Column(String(36), ForeignKey("artworks.id"))
     totalAmount = Column(Float, nullable=False)
-    paymentStatus = Column(SqlEnum(PaymentStatusEnum, native_enum=False))
+    paymentStatus = Column(SqlEnum(PaymentStatusEnum, native_enum=False), nullable=False)
     createdAt = Column(DateTime, default=datetime.utcnow)
+    # createdAt = Column(DateTime, nullable=False)
 
+    # Relationships
     buyer = relationship("User", back_populates="orders")
     artwork = relationship("Artwork", back_populates="orders")
 
-
-class Payment(Base):
-    __tablename__ = "payments"
-
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    order_id = Column(String(36), ForeignKey("orders.id"), nullable=False)
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
-    transaction_id = Column(String(100), unique=True)
-    amount = Column(Float, nullable=False)
-    status = Column(SqlEnum(PaymentStatusEnum, native_enum=False), default=PaymentStatusEnum.pending)
-    method = Column(SqlEnum(PaymentMethodEnum, native_enum=False))
-    paid_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    user = relationship("User", backref="payments")
-    order = relationship("Order", backref="payment")
-
-
-# ============================================================
-# REVIEWS
-# ============================================================
+# -------------------------
+# REVIEW MODEL
+# -------------------------
 
 class Review(Base):
     __tablename__ = "reviews"
@@ -206,33 +231,41 @@ class Review(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     reviewerId = Column(String(36), ForeignKey("users.id"))
     artistId = Column(String(36), ForeignKey("users.id"))
-    artworkId = Column(String(36), ForeignKey("artworks.id"))
+    artworkId = Column(String(36), ForeignKey("artworks.id"), nullable=True)
     rating = Column(Integer, nullable=False)
     comment = Column(Text)
     createdAt = Column(DateTime, default=datetime.utcnow)
+    # createdAt = Column(DateTime, nullable=False)
+    status = Column(String(20), default="pending_moderation")  ##
 
+    # Relationships
     reviewer = relationship("User", back_populates="reviews", foreign_keys=[reviewerId])
     artwork = relationship("Artwork", back_populates="reviews")
     artist = relationship("User", foreign_keys=[artistId])
 
+# -------------------------
+# REVIEW MODEL
+# -------------------------
 
 class ArtistReview(Base):
     __tablename__ = "artist_reviews"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    reviewer_id = Column(String(36), ForeignKey("users.id"))
-    artist_id = Column(String(36), ForeignKey("users.id"))
+    reviewer_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    artist_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     rating = Column(Integer, nullable=False)
-    comment = Column(Text)
+    comment = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # createdAt = Column(DateTime, nullable=False)
+    status = Column(String(20), default="pending_moderation")  ##
 
+    # Relationships
     reviewer = relationship("User", foreign_keys=[reviewer_id], backref="artist_reviews_made")
     artist = relationship("User", foreign_keys=[artist_id], backref="artist_reviews_received")
 
-
-# ============================================================
-# SAVED & CART
-# ============================================================
+# -------------------------
+# SAVED MODEL
+# -------------------------
 
 class Saved(Base):
     __tablename__ = "saved"
@@ -241,10 +274,15 @@ class Saved(Base):
     userId = Column(String(36), ForeignKey("users.id"))
     artworkId = Column(String(36), ForeignKey("artworks.id"))
     createdAt = Column(DateTime, default=datetime.utcnow)
+    # createdAt = Column(DateTime, nullable=False)
 
+    # Relationships
     user = relationship("User", back_populates="Saved_items")
     artwork = relationship("Artwork", back_populates="Saved_items")
 
+# -------------------------
+# CART MODEL
+# -------------------------
 
 class Cart(Base):
     __tablename__ = "cart"
@@ -252,50 +290,88 @@ class Cart(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     userId = Column(String(36), ForeignKey("users.id"))
     artworkId = Column(String(36), ForeignKey("artworks.id"))
-    purchase_quantity = Column(Integer, default=1)
+    purchase_quantity = Column(Integer, nullable=False, default=1)
     createdAt = Column(DateTime, default=datetime.utcnow)
+    # createdAt = Column(DateTime, nullable=False)
 
+    # Relationships
     user = relationship("User", back_populates="cart_items")
     artwork = relationship("Artwork", back_populates="cart_items")
 
-
-# ============================================================
-# MESSAGES
-# ============================================================
+# -------------------------
+# MESSAGE MODEL            
+# -------------------------
 
 class Message(Base):
     __tablename__ = "messages"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    sender_id = Column(String(36), ForeignKey("users.id"))
-    receiver_id = Column(String(36), ForeignKey("users.id"))
-    content = Column(Text)
+    sender_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    receiver_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    content = Column(Text, nullable=True)  # Can be empty for typing
+    # timestamp = Column(DateTime, default=datetime.utcnow)
     timestamp = Column(DateTime, nullable=False)
     is_read = Column(Boolean, default=False)
-    message_type = Column(String(20), default="text")
+    message_type = Column(String(20), default="text")  # "text", "typing", etc.
 
+    # Relationships
     sender = relationship("User", foreign_keys=[sender_id])
     receiver = relationship("User", foreign_keys=[receiver_id])
 
+# -------------------------
+# PAYMENT MODEL
+# -------------------------
 
-# ============================================================
-# ADMIN AUDIT LOG
-# ============================================================
+class Payment(Base):
+    __tablename__ = "payments"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    order_id = Column(String(36), ForeignKey("orders.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    transaction_id = Column(String(100), unique=True, nullable=True)
+    amount = Column(Float, nullable=False)
+    status = Column(SqlEnum(PaymentStatusEnum, native_enum=False), nullable=False, default=PaymentStatusEnum.pending)
+    method = Column(SqlEnum(PaymentMethodEnum, native_enum=False), nullable=False)
+    paid_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    # createdAt = Column(DateTime, nullable=False)
+
+    # Relationships
+    user = relationship("User", backref="payments")
+    order = relationship("Order", backref="payment")
+
+# -------------------------
+# ADMIN AUDIT LOG MODEL
+# -------------------------
 
 class AdminAuditLog(Base):
     __tablename__ = "admin_audit_logs"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    admin_id = Column(String(36), ForeignKey("users.id"))
-    method = Column(String(10))
-    path = Column(String(255))
-    action = Column(String(100))
-    description = Column(Text)
-    ip_address = Column(String(50))
+    admin_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    method = Column(String(10), nullable=False)  # e.g., GET, POST, DELETE
+    path = Column(String(255), nullable=False)   # e.g., /admin/delete-user/5
+    action = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    ip_address = Column(String(50), nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
+    # Relationship
     admin = relationship("User", backref="admin_logs")
 
+# -------------------------
+# MODERATION QUEUE LOG MODEL
+# -------------------------
+class ModerationQueue(Base):
+    __tablename__ = "moderation_queue"
+
+    # id = Column(Integer, primary_key=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    table_name = Column(String(50))
+    # content_id = Column(Integer)
+    content_id = Column(String(36), nullable=False) 
+    created_at = Column(DateTime, default=datetime.utcnow)
+    checked = Column(Boolean, default=False)
 
 # ============================================================
 # OPTIONAL AI SUPPORT TABLES
