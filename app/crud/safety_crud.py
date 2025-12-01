@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
-from app.models.models import ModerationQueue, Artwork, Comment, Review, ArtistReview
+from app.models.models import ModerationQueue, Artwork, Comment, Review, ArtistReview, StatusENUM
 from app.ai.content_moderation import moderate_content
 
 
@@ -20,15 +20,24 @@ def extract_text(item, content_obj):
         tags = getattr(content_obj, "tags", []) or []
         return f"{title} {description} {' '.join(tags)}"
 
-    # Comments
     if item.table_name == "comments":
         return getattr(content_obj, "content", "") or ""
 
-    # Reviews + Artist Reviews
     if item.table_name in ["reviews", "artist_reviews"]:
         return getattr(content_obj, "comment", "") or ""
 
     return ""
+
+
+def map_status(action: str) -> StatusENUM:
+    """Convert moderation action → StatusENUM"""
+    if action == "allow":
+        return StatusENUM.visible
+    if action == "review":
+        return StatusENUM.pending_moderation
+    if action == "block":
+        return StatusENUM.hidden
+    return StatusENUM.pending_moderation
 
 
 def process_moderation_queue():
@@ -45,10 +54,10 @@ def process_moderation_queue():
 
         for item in pending_items:
 
-            # 1️⃣ Determine model
+            # 1️⃣ Get model class
             ModelClass = MODEL_MAPPING.get(item.table_name)
             if not ModelClass:
-                print(f"⚠️ Unknown table: {item.table_name}")
+                print(f"⚠ Unknown table: {item.table_name}")
                 item.checked = True
                 db.commit()
                 continue
@@ -61,17 +70,18 @@ def process_moderation_queue():
                 db.commit()
                 continue
 
-            # 3️⃣ Extract text properly
+            # 3️⃣ Extract text
             text_to_check = extract_text(item, content_obj)
 
             # 4️⃣ Run moderation
             result = moderate_content(text_to_check)
             print(f"🧠 Moderation result → {item.table_name}/{item.content_id}: {result}")
 
-            # 5️⃣ Update content status based on moderation action
-            content_obj.status = result["action"]  # allow / review / block
+            # 5️⃣ Convert moderation → DB StatusENUM
+            new_status = map_status(result["action"])
+            content_obj.status = new_status
 
-            # 6️⃣ Mark queue record as processed
+            # 6️⃣ Mark moderation queue as processed
             item.checked = True
 
             db.commit()

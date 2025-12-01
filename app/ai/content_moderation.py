@@ -1,9 +1,8 @@
 import re
 
-
-# -------------------------
-# Normalized Word Lists
-# -------------------------
+# --------------------------------------------------
+# Word Lists
+# --------------------------------------------------
 
 PROFANITY = {"fuck", "shit", "idiot", "stupid", "bitch", "asshole"}
 HATE_SPEECH = {"hate", "racist", "terrorist", "nazi"}
@@ -18,95 +17,127 @@ SCAM_WORDS = {
     "send payment"
 }
 
-SPAM_PHRASES = {"buy now", "free offer", "click here", "discount", "special deal"}
+SPAM_PHRASES = {
+    "buy now",
+    "free offer",
+    "click here",
+    "discount",
+    "special deal"
+}
 
 NSFW_EMOJIS = {"🍑", "🍆", "😈"}
 VIOLENCE_EMOJIS = {"🔪", "🗡️", "💣"}
 
 
-# -------------------------
+# --------------------------------------------------
 # Helper Functions
-# -------------------------
+# --------------------------------------------------
 
-def normalize(text: str):
-    """Normalizes text by removing symbols (f*ck → fuck)."""
+def normalize(text: str) -> str:
+    """
+    Normalize text by:
+    - lowercasing
+    - removing symbols and punctuation
+    Ensures "f*ck" → "fuck"
+    """
     text = text.lower()
-    text = re.sub(r"[^a-z0-9\s]", "", text)  # remove symbols
-    return text
+    return re.sub(r"[^a-z0-9\s]", " ", text)
 
 
-def word_match(text, words):
-    """Ensures only full-word matches (prevents 'assignment' → ass)."""
-    tokens = text.split()
-    return any(w in tokens for w in words)
+def word_match(text: str, words: set) -> bool:
+    """
+    Match words ONLY if they appear as full tokens.
+    Prevents false positives like:
+    - "assignment" → "ass"
+    """
+    tokens = set(text.split())
+    return any(word in tokens for word in words)
 
 
-# -------------------------
-# Main Moderation Function
-# -------------------------
+# --------------------------------------------------
+# Moderation Core
+# --------------------------------------------------
 
 def moderate_content(text: str):
-    """Safely evaluates content using rule-based scoring."""
+    """
+    Rule-based AI moderation engine.
+    Returns a structured result:
+    {
+        'allowed': bool,
+        'action': 'allow' | 'review' | 'block',
+        'labels': [...],
+        'score': float(0-1)
+    }
+    """
 
     raw_text = text
-    text = normalize(text)
+    normalized = normalize(text)
     score = 0.0
     labels = []
 
-    # ---- Profanity ----
-    if word_match(text, PROFANITY):
+    # ------------------------------
+    # Content Category Detection
+    # ------------------------------
+
+    # Profanity
+    if word_match(normalized, PROFANITY):
         score += 0.30
         labels.append("profanity")
 
-    # ---- Hate Speech ----
-    if word_match(text, HATE_SPEECH):
+    # Hate speech
+    if word_match(normalized, HATE_SPEECH):
         score += 0.40
         labels.append("hate_speech")
 
-    # ---- Violence ----
-    if word_match(text, VIOLENCE):
+    # Violence words
+    if word_match(normalized, VIOLENCE):
         score += 0.35
         labels.append("violence")
 
+    # Violent emojis
     if any(e in raw_text for e in VIOLENCE_EMOJIS):
         score += 0.20
         labels.append("violence_emoji")
 
-    # ---- NSFW ----
-    if word_match(text, NSFW_WORDS):
+    # NSFW text
+    if word_match(normalized, NSFW_WORDS):
         score += 0.45
         labels.append("nsfw")
 
+    # NSFW emojis
     if any(e in raw_text for e in NSFW_EMOJIS):
         score += 0.25
         labels.append("nsfw_emoji")
 
-    # ---- Scam detection ----
+    # Scam detection
     for phrase in SCAM_WORDS:
-        if phrase in text:
+        if phrase in normalized:
             score += 0.30
             labels.append("scam")
 
-    # ---- Spam detection ----
+    # Spam detection
     for phrase in SPAM_PHRASES:
-        if phrase in text:
+        if phrase in normalized:
             score += 0.20
             labels.append("spam")
 
-    # ---- ALL CAPS ----
+    # ALL CAPS aggressive
     if raw_text.isupper() and len(raw_text) > 10:
         score += 0.10
         labels.append("aggressive")
 
-    # ---- Character repetition (spammy) ----
+    # Character repetition spam
     if re.search(r"(.)\1{4,}", raw_text):
         score += 0.20
         labels.append("spam_repetition")
 
-    # Limit score
+    # Limit score between 0–1
     score = min(score, 1.0)
 
-    # ---- Final Decision ----
+    # ------------------------------
+    # Final Decision
+    # ------------------------------
+
     if score >= 0.75:
         action = "block"
         allowed = False
