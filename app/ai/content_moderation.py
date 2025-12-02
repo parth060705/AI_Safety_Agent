@@ -104,7 +104,7 @@ def moderate_content(text: str):
     score = min(score, 1.0)
 
     # ---- Decision ----
-    if score >= 0.40:
+    if score >= 0.10:
         return {
             "allowed": False,
             "action": "block",
