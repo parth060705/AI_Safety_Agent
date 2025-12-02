@@ -1,33 +1,43 @@
+
 import re
 
 # --------------------------------------------------
 # Word Lists
 # --------------------------------------------------
 
-PROFANITY = {"fuck", "shit", "idiot", "stupid", "bitch", "asshole"}
-HATE_SPEECH = {"hate", "racist", "terrorist", "nazi"}
-VIOLENCE = {"kill", "murder", "attack", "blood"}
-NSFW_WORDS = {"sex", "nude", "porn", "boobs", "dick", "pussy"}
+PROFANITY = {
+    "fuck", "shit", "idiot", "stupid", "bitch", "asshole",
+    "damn", "bastard", "crap", "dumb", "idiotic", "slut", "whore",
+    "freak", "jerk","nigga", "moron", "ass", "prick", "douche", "twat"
+}
+
+HATE_SPEECH = {
+    "hate", "racist", "terrorist", "nazi",
+    "bigot", "xenophobe", "sexist", "homophobe", "islamophobe", "supremacist"
+}
+
+VIOLENCE = {
+    "kill", "murder", "attack", "blood",
+    "stab", "shoot", "burn", "destroy", "assault", "slaughter"
+}
+VIOLENCE_EMOJIS = {"🔪", "🗡️", "💣", "💥", "🔥", "⚔️"}
+
+NSFW_WORDS = {
+    "sex", "nude", "porn", "boobs", "dick", "pussy",
+    "cock", "tits", "hentai", "erotic", "fetish", "cum", "anal", "blowjob"
+}
+NSFW_EMOJIS = {"🍑", "🍆", "😈", "💦", "👅"}
 
 SCAM_WORDS = {
-    "urgent sale",
-    "cheap price",
-    "crypto only",
-    "advance payment",
-    "send payment"
+    "urgent sale", "cheap price", "crypto only", "advance payment", "send payment",
+    "limited time offer", "win money", "get rich", "investment opportunity",
+    "pay upfront", "bank transfer only"
 }
 
 SPAM_PHRASES = {
-    "buy now",
-    "free offer",
-    "click here",
-    "discount",
-    "special deal"
+    "buy now", "free offer", "click here", "discount", "special deal",
+    "subscribe now", "share this", "act fast", "must watch", "exclusive deal"
 }
-
-NSFW_EMOJIS = {"🍑", "🍆", "😈"}
-VIOLENCE_EMOJIS = {"🔪", "🗡️", "💣"}
-
 
 # --------------------------------------------------
 # Helper Functions
@@ -93,14 +103,22 @@ def moderate_content(text: str):
             score += 0.20
             labels.append("spam")
 
+    # ALL CAPS long messages → aggressive
     if raw_text.isupper() and len(raw_text) > 10:
         score += 0.10
         labels.append("aggressive")
 
+    # Repeated characters → spam
     if re.search(r"(.)\1{4,}", raw_text):
         score += 0.20
         labels.append("spam_repetition")
 
+    # Repeated emojis/symbols → spam
+    if re.search(r"([!?.🔥💦🍆🍑])\1{3,}", raw_text):
+        score += 0.15
+        labels.append("emoji_repetition")
+
+    # Cap score at 1.0
     score = min(score, 1.0)
 
     # ---- Decision ----
