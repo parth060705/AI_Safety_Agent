@@ -156,8 +156,7 @@ NSFW_EMOJIS = {"🍑", "🍆", "😈", "💦", "👅"}
 
 # Load words from CSV
 with open("app/csv/moderation_content.csv", newline="", encoding="utf-8") as csvfile:
-    reader = csv.DictReader(filter(lambda row: not row.startswith('#'), csvfile)) # remove all comments line
-    # reader = csv.DictReader(csvfile)
+    reader = csv.DictReader(csvfile)
     for row in reader:
         word = row['word'].strip().lower()
         category = row['category'].strip().lower()

@@ -1,6 +1,4 @@
 category,word
-# -----------------------------
-# Profanity - English + Indian
 profanity,fuck
 profanity,shit
 profanity,idiot
@@ -35,16 +33,12 @@ profanity,saala
 profanity,gandu
 profanity,behenchod
 profanity,madarchod
-# -----------------------------
-# Hate Speech
 hate_speech,hate
 hate_speech,racist
 hate_speech,nazi
 hate_speech,bigot
 hate_speech,xenophobe
 hate_speech,communalist
-# -----------------------------
-# Violence
 violence,kill
 violence,murder
 violence,stab
@@ -53,8 +47,6 @@ violence,burn
 violence,destroy
 violence,assault
 violence,slaughter
-# -----------------------------
-# NSFW
 nsfw,sex
 nsfw,porn
 nsfw,nude
@@ -74,8 +66,6 @@ nsfw,direct message me
 nsfw,message me personally
 nsfw,contact me privately
 nsfw,ping me
-# -----------------------------
-# Scam / Fraud
 scam,urgent sale
 scam,cheap price
 scam,crypto only
@@ -95,8 +85,6 @@ scam,direct message me
 scam,message me personally
 scam,contact me privately
 scam,ping me
-# -----------------------------
-# Spam / Promotional
 spam,buy now
 spam,free offer
 spam,click here
