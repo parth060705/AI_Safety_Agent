@@ -1,0 +1,117 @@
+category,word
+# -----------------------------
+# Profanity - English + Indian
+profanity,fuck
+profanity,shit
+profanity,idiot
+profanity,stupid
+profanity,bitch
+profanity,asshole
+profanity,damn
+profanity,bastard
+profanity,crap
+profanity,dumb
+profanity,idiotic
+profanity,slut
+profanity,whore
+profanity,freak
+profanity,jerk
+profanity,moron
+profanity,ass
+profanity,prick
+profanity,douche
+profanity,twat
+profanity,bc
+profanity,mc
+profanity,bcchod
+profanity,mcchod
+profanity,chutiya
+profanity,bhosdike
+profanity,harami
+profanity,lodu
+profanity,chod
+profanity,sala
+profanity,saala
+profanity,gandu
+profanity,behenchod
+profanity,madarchod
+# -----------------------------
+# Hate Speech
+hate_speech,hate
+hate_speech,racist
+hate_speech,nazi
+hate_speech,bigot
+hate_speech,xenophobe
+hate_speech,communalist
+# -----------------------------
+# Violence
+violence,kill
+violence,murder
+violence,stab
+violence,shoot
+violence,burn
+violence,destroy
+violence,assault
+violence,slaughter
+# -----------------------------
+# NSFW
+nsfw,sex
+nsfw,porn
+nsfw,nude
+nsfw,boobs
+nsfw,dick
+nsfw,pussy
+nsfw,cock
+nsfw,tits
+nsfw,hentai
+nsfw,erotic
+nsfw,fetish
+nsfw,cum
+nsfw,anal
+nsfw,blowjob
+nsfw,dm me
+nsfw,direct message me
+nsfw,message me personally
+nsfw,contact me privately
+nsfw,ping me
+# -----------------------------
+# Scam / Fraud
+scam,urgent sale
+scam,cheap price
+scam,crypto only
+scam,advance payment
+scam,send payment
+scam,limited time offer
+scam,win money
+scam,get rich
+scam,investment opportunity
+scam,pay upfront
+scam,bank transfer only
+scam,transfer money
+scam,send crypto
+scam,quick profit
+scam,dm me
+scam,direct message me
+scam,message me personally
+scam,contact me privately
+scam,ping me
+# -----------------------------
+# Spam / Promotional
+spam,buy now
+spam,free offer
+spam,click here
+spam,discount
+spam,special deal
+spam,subscribe now
+spam,share this
+spam,act fast
+spam,must watch
+spam,exclusive deal
+spam,limited offer
+spam,hot deal
+spam,amazing offer
+spam,dm me
+spam,direct message me
+spam,message me personally
+spam,contact me privately
+spam,ping me
