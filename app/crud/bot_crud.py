@@ -1,36 +1,34 @@
 import re
 import time
-from collections import defaultdict
 import csv
+from collections import defaultdict
 
-# --------------------------------------------------
-# Bot Detection Lists Loaded from CSV
-# --------------------------------------------------
+# ==================================================
+# BOT DETECTION LISTS (Loaded from CSV)
+# ==================================================
 
 BOT_PHRASES = set()
 EMOJI_SPAM = set()
 
 def load_bot_csv():
-    """Safely load bot detection words from CSV."""
-    
-    csv_path = "app/csv/bot_moderation.csv"
+    """Safely load bot detection phrases & emojis."""
+    path = "app/csv/bot_moderation.csv"
 
     try:
-        with open(csv_path, newline="", encoding="utf-8") as csvfile:
+        with open(path, newline="", encoding="utf-8") as file:
             reader = csv.DictReader(
-                filter(lambda row: row.strip() and not row.startswith("#"), csvfile)
+                filter(lambda row: row.strip() and not row.startswith("#"), file)
             )
 
             for row in reader:
-                word = row.get("word")
                 category = row.get("category")
+                word = row.get("word")
 
-                # Skip missing or comment rows
-                if not word or not category:
+                if not category or not word:
                     continue
 
-                word = word.strip().lower()
                 category = category.strip().lower()
+                word = word.strip().lower()
 
                 if category == "bot_phrase":
                     BOT_PHRASES.add(word)
@@ -39,48 +37,51 @@ def load_bot_csv():
                     EMOJI_SPAM.add(word)
 
     except FileNotFoundError:
-        print(f"[ERROR] CSV not found: {csv_path}")
+        print(f"[ERROR] CSV not found: {path}")
     except Exception as e:
         print(f"[ERROR] CSV load failed: {e}")
 
-# Load file immediately
+# Load CSV immediately
 load_bot_csv()
 
-# --------------------------------------------------
-# User Activity Tracking
-# --------------------------------------------------
+
+# ==================================================
+# USER MESSAGE SPEED DATA
+# ==================================================
 
 USER_ACTIVITY = defaultdict(list)
 
 def record_message(user_id: str):
-    """Track timestamps of messages to detect spam/bot-like speed."""
+    """Track timestamps of messages, detect bots sending too fast."""
     now = time.time()
     USER_ACTIVITY[user_id].append(now)
 
-    # Keep only last 10 timestamps
     if len(USER_ACTIVITY[user_id]) > 10:
         USER_ACTIVITY[user_id] = USER_ACTIVITY[user_id][-10:]
 
 
 def is_sending_too_fast(user_id: str) -> bool:
-    """Bot-like speed: 5+ messages in < 3 seconds."""
+    """Detect if 5+ messages within 3 seconds."""
     timestamps = USER_ACTIVITY[user_id]
     if len(timestamps) < 5:
         return False
 
     return (timestamps[-1] - timestamps[0]) < 3
 
-# --------------------------------------------------
-# Text Pattern Checks
-# --------------------------------------------------
+
+# ==================================================
+# TEXT CHECKS
+# ==================================================
+
+def normalize(text: str) -> str:
+    return re.sub(r"[^a-z0-9\s]", " ", text.lower())
+
 
 def detect_repetitive_pattern(text: str) -> bool:
-    """Detect repeated characters like 'heyyyyyyyyyy'."""
     return bool(re.search(r"(.)\1{6,}", text))
 
 
 def detect_emoji_spam(text: str) -> bool:
-    """Detect repeated emojis (5+ same emoji)."""
     for emoji in EMOJI_SPAM:
         if text.count(emoji) >= 5:
             return True
@@ -88,56 +89,48 @@ def detect_emoji_spam(text: str) -> bool:
 
 
 def detect_bot_phrases(normalized: str) -> bool:
-    """Check for suspicious bot-like phrases."""
     return any(phrase in normalized for phrase in BOT_PHRASES)
 
 
-def normalize(text: str) -> str:
-    """Normalize text for matching."""
-    return re.sub(r"[^a-z0-9\s]", " ", text.lower())
-
-# --------------------------------------------------
-# Main Bot Detection Function
-# --------------------------------------------------
+# ==================================================
+# MAIN BOT DETECTION ENGINE
+# ==================================================
 
 def bot_detector(user_id: str, text: str):
-    """Full bot detection engine."""
+    """Returns bot detection result."""
 
-    raw_text = text
+    raw = text
     normalized = normalize(text)
 
     score = 0.0
     labels = []
 
-    # Track behavior
+    # Speed detection
     record_message(user_id)
-
-    # Bot sending messages too fast
     if is_sending_too_fast(user_id):
         score += 0.40
         labels.append("bot_speed")
 
-    # Repetitive characters
-    if detect_repetitive_pattern(raw_text):
+    # Repetitive spam
+    if detect_repetitive_pattern(raw):
         score += 0.30
         labels.append("repetitive_text")
 
-    # Repeated emoji spam
-    if detect_emoji_spam(raw_text):
+    # Emoji spam
+    if detect_emoji_spam(raw):
         score += 0.25
         labels.append("emoji_spam")
 
-    # Bot phrases
+    # Message contains known bot phrases
     if detect_bot_phrases(normalized):
         score += 0.35
         labels.append("bot_phrase")
 
     # All caps
-    if raw_text.isupper() and len(raw_text) > 8:
+    if raw.isupper() and len(raw) > 8:
         score += 0.10
-        labels.append("all_caps_bot")
+        labels.append("all_caps")
 
-    # Prevent overflow
     score = min(score, 1.0)
 
     # Final decision
